@@ -326,7 +326,7 @@ function updateHud() {
     if ($('lg' + cap).innerHTML !== lg) $('lg' + cap).innerHTML = lg;
     $('lg' + cap).style.display = lg ? '' : 'none';
     $('row' + cap).style.setProperty('--tc', kitOf(r).body);
-    $('dots' + cap).innerHTML = dotsFor(r);
+    const dh = dotsFor(r); if ($('dots' + cap).innerHTML !== dh) $('dots' + cap).innerHTML = dh;
     $('pts' + cap).textContent = scoreOf(r);
   }
   $('roundLbl').textContent = periodLabel(m) + (m.phase === 'turn' || m.phase === 'reveal' ? ` · ${Math.min(m.qPoss + (m.phase === 'turn' ? 1 : 0), m.periodLen)}/${m.periodLen}` : '');
@@ -358,15 +358,52 @@ function setHint(big, small) {
 }
 
 // ---------- canvas ----------
-const cv = $('cv'), ctx = cv.getContext('2d'), stage = $('stage');
+const cv = $('cv'), stage = $('stage');
+const mainCtx = cv.getContext('2d', { alpha: false });
+let ctx = mainCtx;                      // swapped temporarily while painting cached layers
 let W = 360, H = 560;
+// Render scale: capped at 1.5x (sharp enough on phones, far fewer pixels than 3x);
+// lowered automatically to 1x if the device can't keep up (see perf monitor in frame()).
+let renderScale = Math.min(1.5, window.devicePixelRatio || 1);
+let lowFx = false;                      // lighter crowd when the device is slow
 function resize() {
   const r = stage.getBoundingClientRect();
   if (!r.width || !r.height) return;
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
   W = r.width; H = r.height;
-  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  cv.width = Math.round(W * renderScale); cv.height = Math.round(H * renderScale);
+  mainCtx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
+  layers = null; crowd = null;
+}
+// Static scenery (sky, stand steps, floor, lines, backboard) is painted once into offscreen
+// canvases and blitted every frame instead of being redrawn from scratch.
+let layers = null;
+function makeLayer(paint) {
+  const c = document.createElement('canvas');
+  c.width = Math.round(W * renderScale); c.height = Math.round(H * renderScale);
+  const lc = c.getContext('2d');
+  lc.setTransform(renderScale, 0, 0, renderScale, 0, 0);
+  const saved = ctx; ctx = lc;
+  try { paint(); } finally { ctx = saved; }
+  return c;
+}
+function ensureLayers() {
+  if (layers && layers.W === W && layers.H === H) return;
+  if (!crowd || crowd.W !== W || crowd.H !== H) buildCrowd();
+  layers = {
+    W, H,
+    back: makeLayer(() => {
+      ctx.fillStyle = '#121014'; ctx.fillRect(0, 0, W, H);
+      const g = ctx.createLinearGradient(0, 0, 0, H * 0.4);
+      g.addColorStop(0, '#05060d'); g.addColorStop(1, '#11152b');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H * 0.45);
+      for (let r = 0; r < crowd.rows; r++) {
+        const y = crowd.top + r * crowd.rh;
+        ctx.fillStyle = r % 2 ? '#1a1f3d' : '#161a33'; ctx.fillRect(0, y, W, crowd.rh);
+        ctx.fillStyle = 'rgba(255,255,255,.04)'; ctx.fillRect(0, y + crowd.rh - 2, W, 2);
+      }
+    }),
+    front: makeLayer(() => { drawFloor(); drawBackboard(); }),
+  };
 }
 window.addEventListener('resize', resize);
 
@@ -403,40 +440,59 @@ function buildCrowd() {
   for (let r = 0; r < rows; r++) {
     const n = Math.floor(W / (10 + r * 1.2));
     for (let i = 0; i < n; i++) {
-      crowd.fans.push({ r, x: (i + (r % 2) * 0.5) * (W / n) + (Math.random() - 0.5) * 4, skin: skins[(i * 7 + r) % skins.length],
+      crowd.fans.push({ r, x: (i + (r % 2) * 0.5) * (W / n) + (Math.random() - 0.5) * 4, skinIdx: (i * 7 + r) % skins.length,
         shirt: (i + r) % 4, ph: Math.random() * 6.28, fan: Math.random() < 0.5 ? 'host' : 'guest' });
     }
   }
   crowd.shirts = shirts;
+  crowd.skins = skins;
 }
 function drawArena(t) {
-  if (!crowd || crowd.W !== W || crowd.H !== H) buildCrowd();
-  const g = ctx.createLinearGradient(0, 0, 0, H * 0.4);
-  g.addColorStop(0, '#05060d'); g.addColorStop(1, '#11152b');
-  ctx.fillStyle = g; ctx.fillRect(-10, -10, W + 20, H * 0.45);
-  // stand steps
+  ensureLayers();
+  ctx.drawImage(layers.back, 0, 0, W, H);
   const C = crowd, shirts = C.shirts();
   crowdExcite = Math.max(0, crowdExcite - 0.006);
-  for (let r = 0; r < C.rows; r++) {
-    const y = C.top + r * C.rh;
-    ctx.fillStyle = r % 2 ? '#1a1f3d' : '#161a33';
-    ctx.fillRect(0, y, W, C.rh);
-    ctx.fillStyle = 'rgba(255,255,255,.04)'; ctx.fillRect(0, y + C.rh - 2, W, 2);
-  }
   const sc = H / 700;
-  for (const f of C.fans) {
-    const y = C.top + (f.r + 1) * C.rh - 3;
+  const step = lowFx ? 2 : 1;            // on slow devices draw every other fan
+  // compute positions once, then fill shirts / heads / arms in a few batched paths
+  const P2 = C.pos || (C.pos = new Float32Array(C.fans.length * 3));
+  for (let i = 0; i < C.fans.length; i += step) {
+    const f = C.fans[i];
     const ex = crowdExcite * (f.fan === crowdT || crowdT === 'all' ? 1 : 0.3);
-    const bob = Math.sin(t / 260 + f.ph) * (1 + ex * 4) * sc - ex * 5 * sc * Math.max(0, Math.sin(t / 120 + f.ph));
-    const s = (0.8 + f.r * 0.07) * sc;
-    ctx.fillStyle = shirts[f.shirt];
-    ctx.fillRect(f.x - 4 * s, y - 7 * s + bob, 8 * s, 7 * s);
-    ctx.fillStyle = f.skin;
-    ctx.beginPath(); ctx.arc(f.x, y - 10 * s + bob, 3.2 * s, 0, 6.283); ctx.fill();
-    if (ex > 0.3) {                                   // arms in the air
-      ctx.strokeStyle = f.skin; ctx.lineWidth = 1.4 * s;
-      ctx.beginPath(); ctx.moveTo(f.x - 4 * s, y - 6 * s + bob); ctx.lineTo(f.x - 6 * s, y - 15 * s + bob);
-      ctx.moveTo(f.x + 4 * s, y - 6 * s + bob); ctx.lineTo(f.x + 6 * s, y - 15 * s + bob); ctx.stroke();
+    P2[i * 3] = Math.sin(t / 260 + f.ph) * (1 + ex * 4) * sc - ex * 5 * sc * Math.max(0, Math.sin(t / 120 + f.ph));
+    P2[i * 3 + 1] = (0.8 + f.r * 0.07) * sc;
+    P2[i * 3 + 2] = ex;
+  }
+  const fanY = f => C.top + (f.r + 1) * C.rh - 3;
+  for (let k = 0; k < shirts.length; k++) {
+    ctx.fillStyle = shirts[k]; ctx.beginPath();
+    for (let i = 0; i < C.fans.length; i += step) {
+      const f = C.fans[i]; if (f.shirt !== k) continue;
+      const bob = P2[i * 3], sz = P2[i * 3 + 1];
+      ctx.rect(f.x - 4 * sz, fanY(f) - 7 * sz + bob, 8 * sz, 7 * sz);
+    }
+    ctx.fill();
+  }
+  for (let k = 0; k < C.skins.length; k++) {
+    const skin = C.skins[k];
+    ctx.fillStyle = skin; ctx.beginPath();
+    let arms = false;
+    for (let i = 0; i < C.fans.length; i += step) {
+      const f = C.fans[i]; if (f.skinIdx !== k) continue;
+      const bob = P2[i * 3], sz = P2[i * 3 + 1], y = fanY(f) - 10 * sz + bob;
+      ctx.moveTo(f.x + 3.2 * sz, y); ctx.arc(f.x, y, 3.2 * sz, 0, 6.283);
+      if (P2[i * 3 + 2] > 0.3) arms = true;
+    }
+    ctx.fill();
+    if (arms) {                                       // arms in the air (only while excited)
+      ctx.strokeStyle = skin; ctx.lineWidth = 1.4 * sc; ctx.beginPath();
+      for (let i = 0; i < C.fans.length; i += step) {
+        const f = C.fans[i]; if (f.skinIdx !== k || P2[i * 3 + 2] <= 0.3) continue;
+        const bob = P2[i * 3], sz = P2[i * 3 + 1], y = fanY(f);
+        ctx.moveTo(f.x - 4 * sz, y - 6 * sz + bob); ctx.lineTo(f.x - 6 * sz, y - 15 * sz + bob);
+        ctx.moveTo(f.x + 4 * sz, y - 6 * sz + bob); ctx.lineTo(f.x + 6 * sz, y - 15 * sz + bob);
+      }
+      ctx.stroke();
     }
   }
   // camera flashes
@@ -957,11 +1013,25 @@ async function sendMove(mv, extra) {
 const DEF_NAME = new Proxy({}, { get: (_, k) => T('def.' + String(k)) });
 
 // ---------- main draw loop ----------
+// Perf monitor: if frames are consistently slow, drop to 1x render scale, then to a lighter crowd.
+const perf = { n: 0, sum: 0, last: 0 };
+function perfSample(t) {
+  if (perf.last) { const dt = t - perf.last; if (dt < 250) { perf.sum += dt; perf.n++; } }
+  perf.last = t;
+  if (perf.n < 120) return;
+  const avg = perf.sum / perf.n; perf.n = 0; perf.sum = 0;
+  if (avg > 24) {                         // below ~40 fps
+    if (renderScale > 1) { renderScale = 1; resize(); }
+    else if (!lowFx) lowFx = true;
+  }
+}
+const gameEl = $('game');
 function frame() {
   requestAnimationFrame(frame);
-  if (!$('game').classList.contains('on') || !S || !S.match) return;
+  if (!gameEl.classList.contains('on') || !S || !S.match) { perf.last = 0; return; }
   if (cv.width === 0) resize();
   const t = performance.now();
+  perfSample(t);
   const Tn = now();
   const m = S.match;
   const playing = revealPlaying();
@@ -980,10 +1050,9 @@ function frame() {
     const f = P(0, 0.1, 0.55);
     ctx.translate(f.x, f.y); ctx.scale(z, z); ctx.translate(-f.x, -f.y);
   }
-  ctx.clearRect(-10, -10, W + 20, H + 20);
+  ctx.fillStyle = '#121014'; ctx.fillRect(-10, -10, W + 20, H + 20);
   drawArena(t);
-  drawFloor();
-  drawBackboard();
+  ctx.drawImage(layers.front, 0, 0, W, H);
 
   const attRole = playing ? reveal.last.attacker : m.shooter;
   const defRole = attRole === 'host' ? 'guest' : 'host';
@@ -1144,52 +1213,71 @@ function drawPowerMeter(spot, t) {
 }
 
 let sparks = [];
-function drawBanner(R, rt) {
+// The result banner is painted once per result into two small offscreen canvases
+// (static text + slogan) and then only scaled/faded per frame — strokes and gradients are costly.
+function bannerImages(R) {
+  const lang = window.PotaI18n ? window.PotaI18n.lang : 'en';
+  if (R.img && R.img.W === W && R.img.lang === lang && R.img.scale === renderScale) return R.img;
   const [txt, color] = RESULT_TEXT[R.res] || [R.res, '#fff'];
+  const last = R.last, big = R.slogan || txt;
+  const cw = Math.ceil(W), ch = 220, cx = cw / 2, cy = 110;
+  const mk = paint => {
+    const c = document.createElement('canvas');
+    c.width = Math.round(cw * renderScale); c.height = Math.round(ch * renderScale);
+    const g = c.getContext('2d'); g.setTransform(renderScale, 0, 0, renderScale, 0, 0);
+    const saved = ctx; ctx = g;
+    try { ctx.translate(cx, cy); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; paint(); } finally { ctx = saved; }
+    return c;
+  };
+  const info = mk(() => {
+    if (R.slogan) {
+      ctx.font = '900 14px system-ui';
+      const w = ctx.measureText(txt).width + 18;
+      ctx.fillStyle = color; roundRect(-w / 2, -58, w, 22, 11); ctx.fill();
+      ctx.fillStyle = '#0d1020'; ctx.fillText(txt, 0, -46);
+    }
+    ctx.font = '800 16px system-ui';
+    let sub;
+    if (last.made) sub = T('ban.made', { name: starOf(last.attacker), pts: last.pts }) + (last.open ? T('ban.open') : '');
+    else if (last.result === 'block') sub = T('ban.block', { name: starOf(last.defender) });
+    else if (last.result === 'steal') sub = T('ban.steal', { name: starOf(last.defender) });
+    else sub = starOf(last.attacker);
+    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.strokeText(sub, 0, 38); ctx.fillStyle = '#fff'; ctx.fillText(sub, 0, 38);
+    let info2 = last.made ? T('ban.keep') : T('ban.change');
+    if (last.made && last.streak >= 3) info2 = T('ban.streak', { n: last.streak });
+    ctx.font = '800 13px system-ui'; ctx.strokeText(info2, 0, 62);
+    ctx.fillStyle = last.made ? (last.streak >= 3 ? '#ff9a3c' : '#3ddc84') : 'rgba(255,255,255,.85)'; ctx.fillText(info2, 0, 62);
+  });
+  const slogan = mk(() => {
+    ctx.rotate(-0.07);
+    let fs = Math.min(44, W * 0.105);
+    ctx.font = `${fs}px Bungee, system-ui`;
+    const tw = ctx.measureText(big).width;
+    if (tw > W * 0.88) { fs *= (W * 0.88) / tw; ctx.font = `${fs}px Bungee, system-ui`; }
+    const gr = ctx.createLinearGradient(0, -fs / 2, 0, fs / 2);
+    if (last.made) { gr.addColorStop(0, '#fff6b0'); gr.addColorStop(0.5, '#ffcc33'); gr.addColorStop(1, '#ff7a1a'); }
+    else if (R.res === 'block' || R.res === 'steal') { gr.addColorStop(0, '#d8fbff'); gr.addColorStop(1, '#22c3e6'); }
+    else { gr.addColorStop(0, '#ffd0d8'); gr.addColorStop(1, '#ff4d6d'); }
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 9; ctx.strokeStyle = '#05070f'; ctx.strokeText(big, 0, 0);
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.strokeText(big, 0, 0);
+    ctx.fillStyle = gr; ctx.fillText(big, 0, 0);
+  });
+  R.img = { info, slogan, cw, ch, cx, cy, W, lang, scale: renderScale };
+  return R.img;
+}
+
+function drawBanner(R, rt) {
   const last = R.last;
-  const big = R.slogan || txt;
   const pop = rt < 220 ? 0.4 + 0.8 * (rt / 220) : 1.2 - 0.2 * Math.min(1, (rt - 220) / 160);
   const fade = rt > 2000 ? Math.max(0, 1 - (rt - 2000) / 400) : 1;
+  const I = bannerImages(R);
   ctx.save();
   ctx.globalAlpha = fade;
+  ctx.drawImage(I.info, W / 2 - I.cx, H * 0.48 - I.cy, I.cw, I.ch);
   ctx.translate(W / 2, H * 0.48);
-  // top label (result)
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  if (R.slogan) {
-    ctx.font = '900 14px system-ui';
-    const w = ctx.measureText(txt).width + 18;
-    ctx.fillStyle = color; roundRect(-w / 2, -58, w, 22, 11); ctx.fill();
-    ctx.fillStyle = '#0d1020'; ctx.fillText(txt, 0, -46);
-  }
-  // big slogan: slanted, bright, bouncing
-  ctx.save();
-  ctx.rotate(-0.07);
   ctx.scale(pop, pop);
-  let fs = Math.min(44, W * 0.105);
-  ctx.font = `${fs}px Bungee, system-ui`;
-  const tw = ctx.measureText(big).width;
-  if (tw > W * 0.88) { fs *= (W * 0.88) / tw; ctx.font = `${fs}px Bungee, system-ui`; }
-  const gr = ctx.createLinearGradient(0, -fs / 2, 0, fs / 2);
-  if (last.made) { gr.addColorStop(0, '#fff6b0'); gr.addColorStop(0.5, '#ffcc33'); gr.addColorStop(1, '#ff7a1a'); }
-  else if (R.res === 'block' || R.res === 'steal') { gr.addColorStop(0, '#d8fbff'); gr.addColorStop(1, '#22c3e6'); }
-  else { gr.addColorStop(0, '#ffd0d8'); gr.addColorStop(1, '#ff4d6d'); }
-  ctx.lineJoin = 'round';
-  ctx.lineWidth = 9; ctx.strokeStyle = '#05070f'; ctx.strokeText(big, 0, 0);
-  ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.strokeText(big, 0, 0);
-  ctx.fillStyle = gr; ctx.fillText(big, 0, 0);
-  ctx.restore();
-  // bottom lines
-  ctx.font = '800 16px system-ui';
-  let sub;
-  if (last.made) sub = T('ban.made', { name: starOf(last.attacker), pts: last.pts }) + (last.open ? T('ban.open') : '');
-  else if (last.result === 'block') sub = T('ban.block', { name: starOf(last.defender) });
-  else if (last.result === 'steal') sub = T('ban.steal', { name: starOf(last.defender) });
-  else sub = starOf(last.attacker);
-  ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.strokeText(sub, 0, 38); ctx.fillStyle = '#fff'; ctx.fillText(sub, 0, 38);
-  let info = last.made ? T('ban.keep') : T('ban.change');
-  if (last.made && last.streak >= 3) info = T('ban.streak', { n: last.streak });
-  ctx.font = '800 13px system-ui'; ctx.strokeText(info, 0, 62);
-  ctx.fillStyle = last.made ? (last.streak >= 3 ? '#ff9a3c' : '#3ddc84') : 'rgba(255,255,255,.85)'; ctx.fillText(info, 0, 62);
+  ctx.drawImage(I.slogan, -I.cx, -I.cy, I.cw, I.ch);
   ctx.restore();
   // sparks
   if (last.made && rt < 120 && !R.sparked) {
@@ -1250,46 +1338,56 @@ function drawCountdown(ms) {
 }
 
 let lastTick = -1;
+// write to the DOM only when a value actually changes (avoids style/layout work every frame)
+const domCache = new Map();
+function setProp(el, key, val, apply) {
+  const k = el.id + '|' + key;
+  if (domCache.get(k) === val) return;
+  domCache.set(k, val); apply(val);
+}
+const setText = (el, v) => setProp(el, 'text', v, x => { el.textContent = x; });
+const setDisp = (el, v) => setProp(el, 'disp', v, x => { el.style.display = x; });
 function updateClockAndHint(Tn, playing) {
   const m = S.match;
   const clock = $('clock');
   if (m.phase === 'break') {
     const left = Math.max(0, Math.ceil((m.breakUntil - Tn) / 1000));
-    clock.textContent = `0:${String(Math.min(left, 99)).padStart(2, '0')}`; clock.classList.remove('low');
+    setText(clock, `0:${String(Math.min(left, 99)).padStart(2, '0')}`); clock.classList.remove('low');
   } else if (m.phase === 'turn' && !playing) {
     const left = Math.max(0, Math.ceil((m.deadline - Tn) / 1000));
     const lbl = `0:${String(Math.min(left, 99)).padStart(2, '0')}`;
-    if (clock.textContent !== lbl) clock.textContent = lbl;
+    setText(clock, lbl);
     clock.classList.toggle('low', left <= 3);
     if (left <= 3 && left > 0 && left !== lastTick && myTurnKind()) { lastTick = left; sfx('tick'); }
-  } else { clock.textContent = '—'; clock.classList.remove('low'); }
+  } else { setText(clock, '—'); clock.classList.remove('low'); }
 
   const chip = $('oppChip');
   if (m.phase === 'turn' && !playing && !(m.startsAt && Tn < m.startsAt)) {
-    chip.style.display = '';
-    chip.textContent = m.oppReady ? T('chip.ready') : T('chip.thinking');
+    setDisp(chip, '');
+    setText(chip, m.oppReady ? T('chip.ready') : T('chip.thinking'));
     chip.classList.toggle('ok', m.oppReady);
-  } else chip.style.display = 'none';
+  } else setDisp(chip, 'none');
 
   const kind = myTurnKind();
   const mEl = $('modes');
-  mEl.style.display = kind === 'shoot' ? 'flex' : 'none';
+  setDisp(mEl, kind === 'shoot' ? 'flex' : 'none');
   if (kind === 'shoot') for (const b of mEl.children) b.classList.toggle('on', b.dataset.m === mode);
   const dEl = $('dirs');
   const showDirs = kind === 'defend' || (kind === 'shoot' && isShot(mode));
-  dEl.style.display = showDirs ? 'flex' : 'none';
+  setDisp(dEl, showDirs ? 'flex' : 'none');
   dEl.classList.toggle('def', kind === 'defend');
   if (showDirs) for (const b of dEl.children) {
     const l = b.dataset.l;
     const vis = kind === 'defend' || (l !== 'S' && l !== 'P');
-    b.style.display = vis ? '' : 'none';
+    const v = vis ? '' : 'none'; if (b.style.display !== v) b.style.display = v;
     b.classList.toggle('on', kind === 'shoot' && aimLane() === l);
   }
   const brk = m.phase === 'break';
   $('brk').classList.toggle('on', brk);
   if (brk) {
     const rb = $('readyBtn'); const me = m.ready && m.ready[role];
-    rb.disabled = !!me; rb.textContent = me ? T('rematch.wait') : T('ready');
+    if (rb.disabled !== !!me) rb.disabled = !!me;
+    setText(rb, me ? T('rematch.wait') : T('ready'));
   }
 
   const myMove = m.myMove || (pending && pending.turn === m.turn ? pending : null);
@@ -1626,6 +1724,7 @@ const HTML_TITLE = document.title;   // keep the descriptive (SEO) title in Engl
 if (window.PotaI18n) {
   window.PotaI18n.onChange(() => {
     renderLangs();
+    domCache.clear();
     document.title = window.PotaI18n.lang === 'en' ? HTML_TITLE : T('brand.title');
     crowd = null;
     if (S && S.match) updateHud();
