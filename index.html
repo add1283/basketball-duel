@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#121014">
+<title>Basketball Duel — 1v1 Street Basketball for Two Phones</title>
+<meta name="description" content="Free street 1-on-1 basketball game for two phones. Swipe to shoot, read the play, block and steal. Play online with a friend or offline vs the CPU.">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://basketball-duel.vercel.app/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Basketball Duel">
+<meta property="og:title" content="Basketball Duel — 1v1 Street Basketball for Two Phones">
+<meta property="og:description" content="Free street 1-on-1 basketball game for two phones. Swipe to shoot, read the play, block and steal. Play online with a friend or offline vs the CPU.">
+<meta property="og:url" content="https://basketball-duel.vercel.app/">
+<meta property="og:image" content="https://basketball-duel.vercel.app/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Basketball Duel: street 1-on-1 basketball game with phone screenshots">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="es_ES">
+<meta property="og:locale:alternate" content="fr_FR">
+<meta property="og:locale:alternate" content="de_DE">
+<meta property="og:locale:alternate" content="tr_TR">
+<meta property="og:locale:alternate" content="ar_AR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Basketball Duel — 1v1 Street Basketball for Two Phones">
+<meta name="twitter:description" content="Free street 1-on-1 basketball game for two phones. Swipe to shoot, read the play, block and steal. Play online with a friend or offline vs the CPU.">
+<meta name="twitter:image" content="https://basketball-duel.vercel.app/og-image.png">
+<meta name="twitter:image:alt" content="Basketball Duel: street 1-on-1 basketball game with phone screenshots">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VideoGame",
+  "name": "Basketball Duel",
+  "description": "Free street 1-on-1 basketball game for two phones. Swipe to shoot, read the play, block and steal. Play online with a friend or offline vs the CPU.",
+  "url": "https://basketball-duel.vercel.app/",
+  "image": "https://basketball-duel.vercel.app/og-image.png",
+  "genre": [
+    "Sports",
+    "Basketball"
+  ],
+  "gamePlatform": [
+    "Web browser",
+    "Android",
+    "iOS"
+  ],
+  "applicationCategory": "Game",
+  "operatingSystem": "Any",
+  "inLanguage": [
+    "en",
+    "es",
+    "fr",
+    "de",
+    "tr",
+    "ar"
+  ],
+  "playMode": [
+    "MultiPlayer",
+    "SinglePlayer"
+  ],
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "author": {
+    "@type": "Person",
+    "name": "Ahmet Deniz Dündar",
+    "url": "https://github.com/add1283"
+  },
+  "license": "https://opensource.org/licenses/MIT",
+  "codeRepository": "https://github.com/add1283/basketball-duel",
+  "sameAs": "https://github.com/add1283/basketball-duel"
+}
+</script>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+  :root {
+    --bg: #121014; --panel: #1d1a21; --line: #34303d; --text: #fff7ec; --muted: #a59fb2;
+    --host: #ff6b1a; --guest: #2de2c5; --good: #5bf08a; --bad: #ff3d6e; --gold: #ffd23f; --lime: #c6ff3d;
+    --font-display: 'Bungee', system-ui, sans-serif; --font-ui: 'Rubik', system-ui, -apple-system, sans-serif;
+    --slant: polygon(4% 0, 100% 0, 96% 100%, 0 100%);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; color: var(--text); font-family: var(--font-ui); overscroll-behavior: none;
+    background: var(--bg); }
+  body { display: flex; justify-content: center;
+    background:
+      radial-gradient(circle at 50% 120%, rgba(255,107,26,.18), transparent 55%),
+      repeating-radial-gradient(circle at 30% 20%, rgba(255,255,255,.018) 0 1px, transparent 1px 3px),
+      var(--bg); }
+  #app { width: 100%; max-width: 480px; height: 100dvh; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+  button { font: inherit; cursor: pointer; border: 0; color: inherit; }
+
+  /* slanted, hard-shadow buttons */
+  .btn { display: block; width: 100%; padding: 17px 16px; font-family: var(--font-display); font-size: 18px; letter-spacing: .02em;
+    background: var(--host); color: #1a0a00; clip-path: var(--slant); filter: drop-shadow(4px 4px 0 #000); transition: transform .08s; }
+  .btn:active { transform: translate(2px, 2px); }
+  .btn.alt { background: #2a2630; color: var(--text); }
+  .btn.cyan { background: var(--guest); color: #00211c; }
+  .btn:disabled { opacity: .55; }
+  input { width: 100%; padding: 15px 16px; border: 2px solid var(--line); border-radius: 4px; background: #17151b;
+    color: var(--text); font: inherit; font-size: 17px; font-weight: 600; }
+  input:focus { outline: none; border-color: var(--lime); }
+  input::placeholder { color: #6f6880; }
+
+  .screen { position: absolute; inset: 0; display: none; flex-direction: column; padding: 22px 20px calc(24px + env(safe-area-inset-bottom)); gap: 14px; overflow-y: auto; }
+  .screen.on { display: flex; }
+
+  /* graffiti logo + court line background */
+  .hero { position: relative; text-align: center; margin: 3vh 0 1vh; padding: 26px 0 18px; }
+  .hero::before { content: ''; position: absolute; left: 50%; top: 50%; width: 260px; height: 260px; transform: translate(-50%, -50%);
+    border: 3px solid rgba(255,247,236,.07); border-radius: 50%; }
+  .hero::after { content: ''; position: absolute; left: -20px; right: -20px; top: 50%; border-top: 3px solid rgba(255,247,236,.07); }
+  .hero .ball { position: relative; z-index: 1; display: inline-block; width: 66px; height: 66px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ffa25a, #e2560c 60%, #a83a05);
+    box-shadow: inset 0 0 0 2px rgba(0,0,0,.35), 4px 6px 0 #000; animation: dribble 1s infinite cubic-bezier(.5,0,.5,1); }
+  .hero .ball::before, .hero .ball::after { content: ''; position: absolute; inset: 0; border-radius: 50%; }
+  .hero .ball::before { border-left: 2px solid rgba(0,0,0,.55); border-right: 2px solid rgba(0,0,0,.55); left: 18px; right: 18px; }
+  .hero .ball::after { border-top: 2px solid rgba(0,0,0,.55); top: 31px; bottom: auto; height: 0; border-radius: 0; }
+  @keyframes dribble { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-16px) } }
+  .hero h1 { position: relative; z-index: 1; margin: 14px 0 2px; font-family: var(--font-display); font-weight: 400; font-size: 46px; line-height: .95;
+    transform: rotate(-4deg); color: var(--text); text-shadow: 3px 3px 0 #000, -1px -1px 0 #000; }
+  .hero h1 .b1 { display: block; color: var(--text); font-size: 34px; text-shadow: 3px 3px 0 #000; }
+  .hero h1 span:not(.b1) { display: block; color: var(--host); font-size: 52px; text-shadow: 4px 4px 0 #000, 0 0 18px rgba(255,107,26,.45); }
+  .hero p { position: relative; z-index: 1; margin: 10px 0 0; color: var(--lime); font-weight: 800; letter-spacing: .08em; text-transform: uppercase; font-size: 13px; }
+
+  .langs { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; }
+  .langs button { background: #1d1a21; color: var(--muted); padding: 6px 9px; font-size: 13px; font-weight: 800; clip-path: var(--slant); }
+  .langs button.on { background: var(--lime); color: #000; }
+  .btn.cpu { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .btn.cpu small { font-family: var(--font-ui); font-size: 11px; font-weight: 600; color: var(--lime); letter-spacing: .02em; }
+  [dir="rtl"] .hero h1 { transform: rotate(4deg); }
+  .card { background: var(--panel); border: 2px solid var(--line); border-radius: 4px; padding: 16px; position: relative; }
+  .muted { color: var(--muted); font-size: 14px; }
+  details.how { font-size: 14px; color: var(--muted); line-height: 1.55; }
+  details.how summary { font-family: var(--font-display); color: var(--gold); font-size: 15px; cursor: pointer; list-style: none; }
+  details.how summary::after { content: ' ▾'; }
+  details.how[open] summary::after { content: ' ▴'; }
+  details.how b { color: var(--text); }
+  .err { color: var(--bad); text-align: center; min-height: 1.2em; font-size: 14px; font-weight: 600; }
+
+  /* ticket: room code */
+  .ticket { background: var(--gold); color: #1a1400; border-radius: 6px; padding: 18px 16px; text-align: center; position: relative; transform: rotate(-1.5deg);
+    box-shadow: 5px 5px 0 #000; }
+  .ticket::before, .ticket::after { content: ''; position: absolute; top: 50%; width: 22px; height: 22px; margin-top: -11px; border-radius: 50%; background: var(--bg); }
+  .ticket::before { left: -11px; } .ticket::after { right: -11px; }
+  .ticket .lbl { font-weight: 900; letter-spacing: .25em; font-size: 12px; }
+  .code { font-family: var(--font-display); font-size: 40px; letter-spacing: .14em; margin-top: 4px; }
+  .ticket .dash { border-top: 2px dashed rgba(0,0,0,.35); margin: 12px 8px 8px; }
+  .waiting { display: flex; justify-content: center; gap: 6px; }
+  .waiting i { width: 10px; height: 10px; background: #1a1400; border-radius: 50%; animation: wt 1s infinite; }
+  .waiting i:nth-child(2) { animation-delay: .15s } .waiting i:nth-child(3) { animation-delay: .3s }
+  @keyframes wt { 0%,100% { transform: translateY(0); opacity: .4 } 50% { transform: translateY(-6px); opacity: 1 } }
+
+  /* game screen: TV broadcast score band */
+  #game { padding: 0; gap: 0; }
+  .hud { padding: calc(6px + env(safe-area-inset-top)) 8px 4px; }
+  .bug { display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); align-items: stretch; filter: drop-shadow(3px 3px 0 #000); }
+  .side { --tc: var(--host); display: flex; align-items: center; gap: 6px; min-width: 0; padding: 6px 8px; background: #1d1a21; position: relative; }
+  #rowHost { clip-path: polygon(0 0, 100% 0, 100% 100%, 4% 100%); border-left: 6px solid var(--tc); }
+  #rowGuest { --tc: var(--guest); clip-path: polygon(0 0, 100% 0, 96% 100%, 0 100%); border-right: 6px solid var(--tc); flex-direction: row-reverse; text-align: right; }
+  .side .lg { width: 24px; height: 24px; flex: none; display: grid; place-items: center; }
+  .side .lg svg { width: 24px; height: 24px; }
+  .side.me { box-shadow: inset 0 -4px 0 var(--lime); }
+  .side.me .sub { color: var(--lime); }
+  .side .who { flex: 1; min-width: 0; line-height: 1.15; }
+  .side .nm { display: block; font-family: var(--font-display); font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .side .sub { display: block; font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .side .you { font-size: 9px; font-weight: 900; background: var(--lime); color: #000; padding: 1px 4px; margin: 0 4px; vertical-align: 1px; }
+  .side .pts { font-family: var(--font-display); font-size: 26px; min-width: 40px; text-align: center;
+    background: #fff7ec; color: #111; padding: 0 4px; align-self: stretch; display: grid; place-items: center; margin: -6px 0; }
+  .mid { background: #000; color: var(--text); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3px 6px; min-width: 66px; }
+  .mid .t { font-size: 9px; font-weight: 800; letter-spacing: .08em; color: var(--lime); text-transform: uppercase; text-align: center; max-width: 84px; line-height: 1.15; }
+  .clock { font-family: var(--font-display); font-size: 20px; color: var(--gold); font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .clock.low { color: var(--bad); animation: blink .5s infinite alternate; }
+  @keyframes blink { to { opacity: .45 } }
+  .strip { display: flex; justify-content: space-between; align-items: center; margin-top: 5px; }
+  .iconbtn { background: #1d1a21; color: var(--muted); font-size: 14px; padding: 3px 10px; clip-path: var(--slant); }
+  .dots { display: flex; gap: 5px; }
+  #dotsGuest { flex-direction: row-reverse; }
+  .dot { width: 15px; height: 15px; transform: rotate(45deg); border: 2px solid #4a4456; font-size: 0; }
+  .dot.made { background: var(--good); border-color: var(--good); }
+  .dot.miss { background: var(--bad); border-color: var(--bad); }
+  .dot.cur { border-color: var(--lime); box-shadow: 0 0 6px var(--lime); }
+  .stage { position: relative; flex: 1; min-height: 0; touch-action: none; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+  /* footer info band */
+  .hint { padding: 8px 14px calc(10px + env(safe-area-inset-bottom)); text-align: left; min-height: 62px; background: #000; border-top: 3px solid var(--host); position: relative; }
+  .hint .big { font-family: var(--font-display); font-size: 15px; letter-spacing: .01em; color: var(--text); }
+  .hint .small { color: var(--muted); font-size: 12.5px; margin-top: 2px; font-weight: 600; }
+  .chip { position: absolute; top: 18%; right: 10px; background: #000; padding: 5px 12px; font-size: 11px; font-weight: 800; color: var(--muted);
+    clip-path: var(--slant); letter-spacing: .04em; text-transform: uppercase; }
+  .chip.ok { color: #000; background: var(--good); }
+
+  /* move / direction buttons: slanted chips */
+  .zones, .dirs { position: absolute; left: 8px; right: 50px; display: none; gap: 4px; z-index: 3; }
+  .zones { bottom: 10px; }
+  .dirs { bottom: 60px; }
+  .zones button, .dirs button { flex: 1; padding: 11px 2px; background: #000; color: var(--text); font-family: var(--font-display); font-size: 12.5px;
+    clip-path: var(--slant); filter: drop-shadow(2px 2px 0 rgba(0,0,0,.6)); }
+  .zones button { color: var(--muted); }
+  .zones button.on { background: var(--gold); color: #111; }
+  .dirs button.on { background: var(--guest); color: #00211c; }
+  .dirs button.steal { color: var(--gold); }
+  .dirs button.pota { color: var(--host); }
+  .dirs.def { bottom: 10px; right: 8px; }
+  .dirs.def button { padding: 15px 2px; font-size: 12px; }
+
+  .brk { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 14px calc(14px + env(safe-area-inset-bottom)); display: none; gap: 8px; z-index: 4;
+    background: linear-gradient(transparent, rgba(0,0,0,.92) 30%); flex-direction: column; }
+  .brk.on { display: flex; }
+  .brk .row2 { display: flex; gap: 10px; }
+  .brk .btn { padding: 14px 8px; font-size: 14px; }
+
+  /* match end: match ticket + stamp */
+  .modal { position: absolute; inset: 0; background: rgba(0,0,0,.75); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 5; }
+  .modal.on { display: flex; }
+  .modal .card { width: 100%; display: flex; flex-direction: column; gap: 12px; background: #fff7ec; color: #17141a; border: 0; box-shadow: 6px 6px 0 #000; transform: rotate(-1deg); }
+  .modal .card .muted { color: #6b6474; }
+  .modal .head { font-family: var(--font-display); text-align: center; font-size: 13px; letter-spacing: .2em; color: #6b6474; }
+  .result { font-family: var(--font-display); font-size: 40px; text-align: center; margin: 4px auto 0; padding: 4px 14px; border: 4px solid currentColor;
+    transform: rotate(-6deg); display: inline-block; align-self: center; text-shadow: none; }
+  .series { background: #17141a; color: var(--text); text-align: center; padding: 10px; clip-path: var(--slant); }
+  .series .muted { color: var(--muted) !important; font-size: 11px; letter-spacing: .2em; }
+  .series div:last-child { font-family: var(--font-display); font-size: 20px; }
+  .modal .btn.alt { background: #17141a; }
+  .statcard .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .statcard .tile { background: #17141a; color: var(--text); padding: 10px 12px; clip-path: var(--slant); }
+  .statcard .tile b { display: block; font-family: var(--font-display); font-size: 22px; color: var(--gold); }
+  .statcard .tile span { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .statcard .shoot { margin-top: 8px; font-size: 13px; color: #3a3442; }
+  .statcard .shoot div { display: flex; justify-content: space-between; padding: 4px 2px; border-bottom: 1px dashed #d6cfc2; }
+  .statcard .row2 { display: flex; gap: 10px; }
+  .statcard .row2 .btn { padding: 13px 8px; font-size: 14px; }
+  .statcard .empty { text-align: center; color: #6b6474; padding: 18px 0; font-weight: 600; }
+  #statsModal { z-index: 20; }
+  .toast { position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%); background: var(--lime); color: #000; padding: 9px 16px; font-size: 14px; font-weight: 800;
+    display: none; z-index: 9; clip-path: var(--slant); white-space: nowrap; }
+</style>
+<link rel="stylesheet" href="/select.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- Home screen -->
+  <section class="screen" id="home">
+    <div class="langs"></div>
+    <div class="hero">
+      <div class="ball"></div>
+      <h1><span class="b1" data-i18n="brand.1">BASKETBALL</span><span data-i18n="brand.2">DUEL</span></h1>
+      <p data-i18n="home.tag">Street 1-on-1 · Swipe, shoot, block</p>
+    </div>
+    <input id="nameInput" maxlength="16" data-i18n-ph="home.namePh" placeholder="Your street name" autocomplete="nickname">
+    <button class="btn" id="createBtn" data-i18n="home.friend">Play a Friend</button>
+    <button class="btn alt cpu" id="cpuBtn"><span data-i18n="home.cpu">Play vs CPU</span><small data-i18n="home.cpuNote">Offline · no internet needed</small></button>
+    <button class="btn alt" id="statsBtn" data-i18n="stats.btn">📊 My Stats</button>
+    <div class="err" id="homeErr"></div>
+    <details class="card how">
+      <summary data-i18n="home.how">How to play?</summary>
+      <div data-i18n-html="home.howBody"></div>
+    </details>
+  </section>
+
+  <!-- Joining via invite -->
+  <section class="screen" id="joinScr">
+    <div class="langs"></div>
+    <div class="hero">
+      <div class="ball"></div>
+      <h1><span class="b1" data-i18n="brand.1">BASKETBALL</span><span data-i18n="brand.2">DUEL</span></h1>
+      <p id="joinText" data-i18n="join.invited">You've been called to the court!</p>
+    </div>
+    <input id="joinName" maxlength="16" data-i18n-ph="home.namePh" placeholder="Your street name" autocomplete="nickname">
+    <button class="btn cyan" id="joinBtn" data-i18n="join.go">Hit the Court</button>
+    <div class="err" id="joinErr"></div>
+    <button class="btn alt" id="joinHome" data-i18n="join.home">Home</button>
+  </section>
+
+  <!-- Waiting -->
+  <section class="screen" id="waitScr">
+    <div class="hero" style="margin-top:2vh;padding:10px 0">
+      <h1 style="font-size:30px"><span class="b1" data-i18n="wait.t1">WAITING</span><span style="font-size:34px" data-i18n="wait.t2">FOR RIVAL</span></h1>
+      <p data-i18n="wait.sub">Send the ticket — the game starts when they join</p>
+    </div>
+    <div class="ticket">
+      <div class="lbl" data-i18n="wait.ticket">GAME TICKET · ROOM</div>
+      <div class="code" id="waitCode">——————</div>
+      <div class="dash"></div>
+      <div class="waiting"><i></i><i></i><i></i></div>
+    </div>
+    <button class="btn cyan" id="shareBtn" data-i18n="wait.share">Share Link</button>
+    <button class="btn alt" id="copyBtn" data-i18n="wait.copy">Copy Link</button>
+    <div class="muted" style="text-align:center" data-i18n="wait.note">You can leave this screen; open the same link to come back.</div>
+  </section>
+
+  <!-- Game -->
+  <section class="screen" id="game">
+    <div class="hud">
+      <div class="bug">
+        <div class="side" id="rowHost"><div class="lg" id="lgHost"></div><div class="who"><span class="nm" id="nmHost"></span><span class="sub" id="subHost"></span></div><div class="pts" id="ptsHost">0</div></div>
+        <div class="mid"><div class="t" id="roundLbl">Q1</div><div class="clock" id="clock">0:10</div></div>
+        <div class="side" id="rowGuest"><div class="lg" id="lgGuest"></div><div class="who"><span class="nm" id="nmGuest"></span><span class="sub" id="subGuest"></span></div><div class="pts" id="ptsGuest">0</div></div>
+      </div>
+      <div class="strip"><div class="dots" id="dotsHost"></div><button class="iconbtn" id="muteBtn" aria-label="Sound">🔊</button><div class="dots" id="dotsGuest"></div></div>
+    </div>
+    <div class="stage" id="stage">
+      <canvas id="cv"></canvas>
+      <div class="chip" id="oppChip"></div>
+      <div class="dirs" id="dirs"><button data-l="L" data-i18n="dir.L">◀ LEFT</button><button data-l="C" data-i18n="dir.C">▲ CENTER</button><button data-l="R" data-i18n="dir.R">RIGHT ▶</button><button data-l="P" class="pota" data-i18n="dir.P">RIM</button><button data-l="S" class="steal" data-i18n="dir.S">STEAL</button></div>
+      <div class="zones" id="modes"><button data-m="shot1" class="on" data-i18n="mode.shot1.label">1PT</button><button data-m="shot2" data-i18n="mode.shot2.label">2PT</button><button data-m="layup" data-i18n="mode.layup.label">LAYUP</button><button data-m="dunk" data-i18n="mode.dunk.label">DUNK</button></div>
+    </div>
+    <div class="hint"><div class="big" id="hintBig"></div><div class="small" id="hintSmall"></div></div>
+    <div class="brk" id="brk">
+      <div class="row2"><button class="btn alt" id="subBtn" data-i18n="brk.sub">Substitute</button><button class="btn cyan" id="readyBtn" data-i18n="ready">I'm Ready</button></div>
+    </div>
+
+    <div class="modal" id="overModal">
+      <div class="card">
+        <div class="head" data-i18n="over.head">FINAL</div>
+        <div class="result" id="overTitle"></div>
+        <div class="muted" style="text-align:center;font-weight:800;font-size:16px" id="overSub"></div>
+        <div class="series">
+          <div class="muted" data-i18n="over.seriesLbl">SERIES</div>
+          <div id="overSeries"></div>
+        </div>
+        <button class="btn cyan" id="shareCardBtn" data-i18n="share.card">📸 Share Result</button>
+        <button class="btn" id="rematchBtn" data-i18n="rematch">Rematch</button>
+        <button class="btn alt" id="teamBtn" data-i18n="over.team">Change Team / Player</button>
+        <button class="btn alt" id="homeBtn" data-i18n="over.home">Home</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Personal stats (stored only on this device) -->
+  <div class="modal" id="statsModal">
+    <div class="card statcard">
+      <div class="head" data-i18n="stats.title">MY STATS</div>
+      <div id="statsBody"></div>
+      <div class="muted" style="text-align:center;font-size:12px" data-i18n="stats.local">Stored only on this device.</div>
+      <div class="row2"><button class="btn alt" id="statsReset" data-i18n="stats.reset">Reset</button><button class="btn" id="statsClose" data-i18n="stats.close">Close</button></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+<script src="/i18n.js"></script>
+<script src="/lang/core.js"></script>
+<script src="/lang/extra.js"></script>
+<script src="/lang/features.js"></script>
+<script src="/lib/teams.js"></script>
+<script src="/lib/rules.js"></script>
+<script src="/select.js"></script>
+<script src="/cheer.js"></script>
+<script src="/game.js"></script>
+</body>
+</html>

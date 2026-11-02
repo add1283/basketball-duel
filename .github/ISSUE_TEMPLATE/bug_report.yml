@@ -1,0 +1,52 @@
+name: Bug report
+description: Something is broken or behaves unexpectedly
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Describe the bug and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the game
+        2. Tap "Play vs CPU"
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Game mode
+      options:
+        - Online (two phones)
+        - Offline vs CPU
+        - Not mode specific
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      placeholder: e.g. iPhone 14, Safari 17 / Pixel 8, Chrome 126
+    validations:
+      required: true
+  - type: dropdown
+    id: lang
+    attributes:
+      label: Language
+      options: [English, Türkçe, Español, Français, Deutsch, العربية]
+  - type: input
+    id: room
+    attributes:
+      label: Room code (online only)
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or console output
+      description: Drag images here, or paste any browser console errors.
