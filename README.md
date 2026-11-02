@@ -144,7 +144,7 @@ vercel env add DATABASE_URL production   # paste your Neon string when prompted
 vercel deploy --prod
 ```
 
-> 🔒 **Never commit secrets.** Keep your connection string only in Vercel's environment variables (or a local `.env`, which is git-ignored — see `.env.example`). Old rooms (3+ days) are cleaned up automatically.
+> 🔒 **Never commit secrets.** Keep your connection string only in Vercel's environment variables (or a local `.env`, which is git-ignored — see `.env.example`). Rooms are deleted after 1 hour of inactivity.
 
 ## 🌍 Translations
 
@@ -158,7 +158,7 @@ The cheer squad name **MANYAFEST** and its song lines are intentionally left unt
 - **Original content:** code, drawings, logos, icon, sounds (synthesized) and texts are original to this project.
 - **Fictional & parody content:** teams, logos and the MANYAFEST cheer squad are fictional; leagues are just labelled "USA" and "EU". Player names are humorous soundalike parodies — no real person's name, photo, image or likeness is used, and player ratings are game-balance values, not official data. This project is not affiliated with, endorsed by or connected to any sports league, club, player or artist.
 - **Trademarks:** "Vercel" and "Neon" are trademarks of their owners and are mentioned only to describe hosting options.
-- **Privacy:** no accounts, no analytics, no cookies and no third-party requests (fonts are self-hosted). Online rooms store only the nickname you type, the chosen team/player and the game state; rooms older than 3 days are purged automatically. Offline mode sends nothing over the network.
+- **Privacy:** no accounts, no analytics, no cookies and no third-party requests (fonts are self-hosted). Online rooms store only the nickname you type, the chosen team/player and the game state; rooms are deleted after 1 hour of inactivity. Offline mode sends nothing over the network.
 - **No warranty:** provided "as is" under the MIT License.
 
 ## 📄 License

@@ -4,6 +4,9 @@ const crypto = require('crypto');
 const R = require('../lib/rules');
 
 const sql = neon(process.env.DATABASE_URL);
+// A room expires after 1 hour without activity (moves, joins, or a player keeping the page open).
+const IDLE_MINUTES = 60;
+const TOUCH_MS = 2 * 60 * 1000;   // while a player is polling, refresh the room's activity at most every 2 min
 let ready = null;
 function ensureTable() {
   if (!ready) {
@@ -29,7 +32,12 @@ const cleanName = (n, d) => (String(n || '').replace(/[<>]/g, '').trim().slice(0
 
 async function load(code) {
   const rows = await sql`SELECT * FROM pota_rooms WHERE code = ${code}`;
-  return rows[0] || null;
+  const row = rows[0] || null;
+  if (row && Date.now() - new Date(row.updated_at).getTime() > IDLE_MINUTES * 60 * 1000) {
+    await sql`DELETE FROM pota_rooms WHERE code = ${code}`;   // expired: treat as gone
+    return null;
+  }
+  return row;
 }
 
 // read → modify → write with version check (retry on conflict)
@@ -40,12 +48,12 @@ async function mutate(code, fn) {
     const room = row.data;
     const out = fn(room, row);
     if (out && out.error) return out;
-    if (!out || !out.changed) return { row, room };
+    if (!out || !out.changed) return { row, room, changed: false };
     const upd = await sql`UPDATE pota_rooms SET data = ${JSON.stringify(room)}::jsonb,
       guest_token = ${out.guestToken || row.guest_token},
       version = version + 1, updated_at = now()
       WHERE code = ${code} AND version = ${row.version} RETURNING version`;
-    if (upd.length) return { row: { ...row, guest_token: out.guestToken || row.guest_token }, room };
+    if (upd.length) return { row: { ...row, guest_token: out.guestToken || row.guest_token }, room, changed: true };
   }
   return { error: 'e.busy', status: 409 };
 }
@@ -67,7 +75,7 @@ module.exports = async (req, res) => {
     const code = String(b.code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
 
     if (b.action === 'create') {
-      if (Math.random() < 0.05) await sql`DELETE FROM pota_rooms WHERE updated_at < now() - interval '3 days'`;
+      await sql`DELETE FROM pota_rooms WHERE updated_at < now() - make_interval(mins => ${IDLE_MINUTES})`;
       for (let i = 0; i < 5; i++) {
         const c = newCode();
         const token = newToken();
@@ -134,6 +142,10 @@ module.exports = async (req, res) => {
       return { changed };
     });
     if (out.error) return res.status(out.status).json({ error: out.error });
+    // keep-alive: a player still on the page keeps the room from expiring
+    if (!out.changed && now - new Date(out.row.updated_at).getTime() > TOUCH_MS) {
+      await sql`UPDATE pota_rooms SET updated_at = now() WHERE code = ${code}`;
+    }
     return res.json({ state: R.view(out.room, role, now) });
   } catch (e) {
     console.error(e);

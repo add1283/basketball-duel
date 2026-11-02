@@ -144,7 +144,7 @@ vercel env add DATABASE_URL production   # sorulunca Neon adresini yapıştır
 vercel deploy --prod
 ```
 
-> 🔒 **Gizli bilgileri asla commit'leme.** Bağlantı adresini yalnızca Vercel ortam değişkenlerinde (ya da git'e girmeyen yerel `.env` dosyasında — bkz. `.env.example`) tut. 3 günden eski odalar otomatik temizlenir.
+> 🔒 **Gizli bilgileri asla commit'leme.** Bağlantı adresini yalnızca Vercel ortam değişkenlerinde (ya da git'e girmeyen yerel `.env` dosyasında — bkz. `.env.example`) tut. 1 saat hareketsiz kalan odalar otomatik silinir.
 
 ## 🌍 Çeviriler
 
@@ -158,7 +158,7 @@ Ponpon ekibinin adı **MANYAFEST** ve şarkı sözleri bilerek çevrilmez.
 - **Özgün içerik:** kod, çizimler, logolar, simge, sesler (çalışırken sentezlenir) ve metinler bu projeye aittir.
 - **Hayali ve parodi içerik:** takımlar, logolar ve MANYAFEST ponpon ekibi hayalidir; ligler yalnızca "USA" ve "EU" diye etiketlenmiştir. Oyuncu isimleri esprili, ses benzeri parodilerdir — hiçbir gerçek kişinin adı, fotoğrafı, görüntüsü ya da benzerliği kullanılmaz; oyuncu puanları oyun dengesi değerleridir, resmî veri değildir. Bu proje hiçbir spor ligi, kulüp, oyuncu ya da sanatçıyla bağlantılı değildir, onlar tarafından desteklenmemektedir.
 - **Markalar:** "Vercel" ve "Neon" sahiplerinin markalarıdır ve yalnızca barındırma seçeneklerini anlatmak için anılmıştır.
-- **Gizlilik:** hesap yok, analitik yok, çerez yok ve üçüncü taraf istek yok (fontlar projeyle birlikte gelir). Online odalar yalnızca yazdığın takma adı, seçilen takım/oyuncuyu ve maç durumunu saklar; 3 günden eski odalar otomatik silinir. Offline mod ağ üzerinden hiçbir şey göndermez.
+- **Gizlilik:** hesap yok, analitik yok, çerez yok ve üçüncü taraf istek yok (fontlar projeyle birlikte gelir). Online odalar yalnızca yazdığın takma adı, seçilen takım/oyuncuyu ve maç durumunu saklar; 1 saat hareketsiz kalan odalar silinir. Offline mod ağ üzerinden hiçbir şey göndermez.
 - **Garanti yok:** MIT lisansı gereği "olduğu gibi" sunulur.
 
 ## 📄 Lisans

@@ -10,16 +10,19 @@ function fakeNeon() {
   return (strings, ...vals) => {
     const q = strings.join('?').replace(/\s+/g, ' ').trim();
     let out = [];
-    if (q.startsWith('CREATE') || q.startsWith('DELETE')) out = [];
+    if (q.startsWith('DELETE') && q.includes('code =')) { rows.delete(vals[0]); out = []; }
+    else if (q.startsWith('CREATE') || q.startsWith('DELETE')) out = [];
     else if (q.startsWith('INSERT')) {
       const [code, host_token, data] = vals;
-      if (!rows.has(code)) { rows.set(code, { code, host_token, guest_token: null, data: JSON.parse(data), version: 0 }); out = [{ code }]; }
+      if (!rows.has(code)) { rows.set(code, { code, host_token, guest_token: null, data: JSON.parse(data), version: 0, updated_at: new Date().toISOString() }); out = [{ code }]; }
     } else if (q.startsWith('SELECT')) {
       const r = rows.get(vals[0]); out = r ? [JSON.parse(JSON.stringify(r))] : [];
+    } else if (q.startsWith('UPDATE pota_rooms SET updated_at')) {
+      const r = rows.get(vals[0]); if (r) r.updated_at = new Date().toISOString();
     } else if (q.startsWith('UPDATE')) {
       const [data, guest, code, version] = vals;
       const r = rows.get(code);
-      if (r && r.version === version) { r.data = JSON.parse(data); r.guest_token = guest; r.version++; out = [{ version: r.version }]; }
+      if (r && r.version === version) { r.data = JSON.parse(data); r.guest_token = guest; r.version++; r.updated_at = new Date().toISOString(); out = [{ version: r.version }]; }
     } else throw new Error('sahte DB: bilinmeyen sorgu ' + q);
     return Promise.resolve(out);
   };
